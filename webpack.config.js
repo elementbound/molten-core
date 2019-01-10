@@ -3,16 +3,18 @@ const path = require('path')
 const DIST = path.resolve(__dirname, 'dist')
 
 module.exports = {
-    // mode: 'development',
-    entry: './src/index.js',
+    entry: {
+        main: './src/index.js',
+        voronoi: './src/worker/voronoi.js'
+    },
 
-    devtool: 'inline-source-map',
+    devtool: 'source-map',
     devServer: {
         contentBase: DIST
     },
 
     output: {
-        filename: 'main.js',
+        filename: '[name].js',
         path: DIST
     }
 }

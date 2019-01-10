@@ -1,9 +1,26 @@
 const three = require('three')
 
+const generateVoronoi = (pointCount, width, height, onProgress) => 
+    new Promise((resolve, reject) => {
+        const worker = new Worker('voronoi.js')
+        worker.postMessage([pointCount, width, height])
+
+        worker.onmessage = event => {
+            const message = event.data
+
+            if(message.type == 'progress' && onProgress) {
+                onProgress(message.progress)
+            } else if(message.type == 'done') {
+                resolve(message.data)
+            }
+        }
+    })
+
 const context = {
     renderer: undefined,
     scene: undefined,
-    camera: undefined
+    camera: undefined,
+    texture: undefined
 }
 
 const setup = () => {
@@ -12,6 +29,22 @@ const setup = () => {
     document.body.appendChild(renderer.domElement)
 
     context.renderer = renderer
+}
+
+const createTexture = async () => {
+    const consoleDiv = document.querySelector('.console')
+    const width = 256
+    const height = 256
+    const points = 32
+
+    const data = await generateVoronoi(points, width, height, progress => {
+        let text = `Generating Voronoi texture ${(progress*10000 | 0) / 100}%`
+        consoleDiv.innerHTML = text
+    })
+    consoleDiv.innerHTML = ''
+
+    context.texture = new three.DataTexture(data, width, height, three.RGBFormat, three.UnsignedByteType)
+    context.texture.needsUpdate = true
 }
 
 const createScene = () => {
@@ -25,8 +58,8 @@ const createScene = () => {
     light.position.z = 1
     scene.add(light)
     
-    var geometry = new three.SphereGeometry(1, 32, 32)
-    var material = new three.MeshLambertMaterial( { color: 0xffffff } )
+    var geometry = new three.PlaneGeometry(4, 4)
+    var material = new three.MeshBasicMaterial( { map: context.texture } )
     var cube = new three.Mesh( geometry, material )
     scene.add(cube)
 
@@ -42,7 +75,7 @@ const render = () => {
 
     camera.aspect = window.innerWidth / window.innerHeight
     camera.updateProjectionMatrix()
-    
+
     renderer.render(scene, camera)
 }
 
@@ -54,10 +87,13 @@ const animate = () => {
     requestAnimationFrame(animate)
 }
 
-window.onload = () => {
+const main = async () => {
     setup()
     window.onresize = adjustCanvasSize(context.renderer)
 
+    await createTexture()
     createScene()
     animate()
 }
+
+window.onload = main

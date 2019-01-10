@@ -10,6 +10,7 @@
     <style>
         body { 
             margin: 0; 
+            background-color: black;
         }
         
         canvas { 
@@ -20,8 +21,24 @@
             left: 0;
             top: 0;
         }
+
+        .console {
+            position: fixed;
+            left: 0;
+            top: 0;
+
+            background-color: rgba(0,0,0, 0.5);
+            color: white;
+            border: 1px solid lightgray;
+            margin: 4px;
+            padding: 2px;
+
+            z-index: 1;
+        }
     </style>
 </head>
 <body>
+    <div class="console"></div>
+    <img id="texture" src="" />
 </body>
 </html>
