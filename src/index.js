@@ -1,9 +1,9 @@
 const three = require('three')
 
-const generateVoronoi = (pointCount, width, height, onProgress) => 
+const generateVoronoi = (pointCount, width, height, depth, onProgress) => 
     new Promise((resolve, reject) => {
         const worker = new Worker('voronoi.js')
-        worker.postMessage([pointCount, width, height])
+        worker.postMessage([pointCount, width, height, depth])
 
         worker.onmessage = event => {
             const message = event.data
@@ -33,18 +33,19 @@ const setup = () => {
 
 const createTexture = async () => {
     const consoleDiv = document.querySelector('.console')
-    const width = 256
-    const height = 256
+    const width = 64
+    const height = 64
+    const depth = 64
     const points = 64
 
     const start = performance.now()
-    const data = await generateVoronoi(points, width, height, progress => {
+    const data = await generateVoronoi(points, width, height, depth, progress => {
         let text = `Generating Voronoi texture ${(progress*10000 | 0) / 100}%`
         consoleDiv.innerHTML = text
     })
     consoleDiv.innerHTML = `Generated Voronoi texture in ${performance.now() - start} ms`
 
-    context.texture = new three.DataTexture(data, width, height, three.RGBFormat, three.UnsignedByteType, 
+    context.texture = new three.DataTexture3D(data, width, height, depth, three.RGBFormat, three.UnsignedByteType, 
         three.UVMapping, three.RepeatWrapping, three.RepeatWrapping, 
         three.LinearFilter, three.LinearFilter)
     context.texture.needsUpdate = true

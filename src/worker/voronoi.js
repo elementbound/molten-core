@@ -1,19 +1,20 @@
 const textureGenerator = require('../texture-generator')
 
-const voronoi = (pointCount, width, height, seamless = true) => {
-    const dataBuffer = new Uint8Array(width * height * 3)
+const voronoi3 = (pointCount, width, height, depth, seamless = true) => {
+    const dataBuffer = new Uint8Array(width * height * depth * 3)
 
-    const pixelsCount = width * height
+    const pixelsCount = width * height * depth
     let pixelsGenerated = 0
 
     const reportRest = 1000 / 10
     let reportLast = 0
 
-    const gotPixel = (x, y, value) => {
+    const gotPixel = (x, y, z, value) => {
         const byte = (value * 255) | 0
-        dataBuffer[3 * (x + y*width) + 0] = byte
-        dataBuffer[3 * (x + y*width) + 1] = byte
-        dataBuffer[3 * (x + y*width) + 2] = byte
+        const stride = 3 * (x + y*width + z*width*height)
+        dataBuffer[stride + 0] = byte
+        dataBuffer[stride + 1] = byte
+        dataBuffer[stride + 2] = byte
         
         ++pixelsGenerated
 
@@ -34,9 +35,9 @@ const voronoi = (pointCount, width, height, seamless = true) => {
         }
     }
 
-    textureGenerator.voronoi(gotPixel, pointCount, width, height, seamless)
+    textureGenerator.voronoi3(gotPixel, pointCount, width, height, depth, seamless)
 }
 
 onmessage = event => {
-    voronoi(...event.data)
+    voronoi3(...event.data)
 }
