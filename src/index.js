@@ -33,9 +33,9 @@ const setup = () => {
 
 const createTexture = async () => {
     const consoleDiv = document.querySelector('.console')
-    const width = 256
-    const height = 256
-    const points = 32
+    const width = 512
+    const height = 512
+    const points = 64
 
     const data = await generateVoronoi(points, width, height, progress => {
         let text = `Generating Voronoi texture ${(progress*10000 | 0) / 100}%`

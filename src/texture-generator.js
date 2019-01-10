@@ -2,7 +2,7 @@ const range = n =>
     [...Array(n).keys()]
 
 const length = ([x, y]) => 
-    Math.sqrt(x*x, y*y)
+    Math.sqrt(x*x + y*y)
 
 const distance = ([ax, ay], [bx, by]) =>
     length([ax-bx, ay-by])
@@ -25,7 +25,7 @@ const distance = ([ax, ay], [bx, by]) =>
 const voronoi = (pointCount, width, height, callback) => {
     const points = range(pointCount)
         .map(() => [Math.random(), Math.random()])
-
+        
     for(let y = 0; y < height; ++y) {
         for(let x = 0; x < width; ++x) {
             const u = x / width
@@ -43,7 +43,7 @@ const voronoi = (pointCount, width, height, callback) => {
             const minDst = Math.min(nearestPoints[0].distance, nearestPoints[1].distance)
             const maxDst = Math.max(nearestPoints[0].distance, nearestPoints[1].distance)
 
-            const value = minDst < 0.125 ? 0.5 : 0
+            const value = Math.pow(minDst / maxDst, 2)
             callback(x, y, value)
         }
     }
