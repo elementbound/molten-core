@@ -33,17 +33,20 @@ const setup = () => {
 
 const createTexture = async () => {
     const consoleDiv = document.querySelector('.console')
-    const width = 512
-    const height = 512
+    const width = 256
+    const height = 256
     const points = 64
 
+    const start = performance.now()
     const data = await generateVoronoi(points, width, height, progress => {
         let text = `Generating Voronoi texture ${(progress*10000 | 0) / 100}%`
         consoleDiv.innerHTML = text
     })
-    consoleDiv.innerHTML = ''
+    consoleDiv.innerHTML = `Generated Voronoi texture in ${performance.now() - start} ms`
 
-    context.texture = new three.DataTexture(data, width, height, three.RGBFormat, three.UnsignedByteType)
+    context.texture = new three.DataTexture(data, width, height, three.RGBFormat, three.UnsignedByteType, 
+        three.UVMapping, three.RepeatWrapping, three.RepeatWrapping, 
+        three.LinearFilter, three.LinearFilter)
     context.texture.needsUpdate = true
 }
 
@@ -51,15 +54,15 @@ const createScene = () => {
     const aspect = window.innerWidth / window.innerHeight
 
     const scene = new three.Scene()
-    const camera = new three.PerspectiveCamera(90, aspect, 1, 8)
+    const camera = new three.PerspectiveCamera(90, aspect, 0.25, 4)
 
     const light = new three.DirectionalLight(0xffffff, 1)
     light.position.x = 1
     light.position.z = 1
     scene.add(light)
     
-    var geometry = new three.PlaneGeometry(4, 4)
-    var material = new three.MeshBasicMaterial( { map: context.texture } )
+    let geometry = new three.SphereGeometry(1, 32, 32)
+    var material = new three.MeshBasicMaterial({ map: context.texture })
     var cube = new three.Mesh( geometry, material )
     scene.add(cube)
 
@@ -68,6 +71,22 @@ const createScene = () => {
 
     context.scene = scene
     context.camera = camera
+}
+
+const update = time => {
+    const {camera} = context
+
+    const factor = (time % 8) / 8
+
+    const yaw = factor * 2 * Math.PI
+    const pitch = (30 + 11.25 * Math.sin(factor * 2 * Math.PI)) / 180 * Math.PI
+    const dst = (2 + 0.5 * Math.sin(factor * 2 * Math.PI))
+
+    camera.position.x = Math.cos(yaw) * Math.cos(pitch) * dst
+    camera.position.y = Math.sin(pitch) * dst
+    camera.position.z = Math.sin(yaw) * Math.cos(pitch) * dst
+
+    camera.lookAt(0, 0, 0)
 }
 
 const render = () => {
@@ -82,7 +101,8 @@ const render = () => {
 const adjustCanvasSize = (renderer) => () => 
     renderer.setSize(window.innerWidth, window.innerHeight)
 
-const animate = () => {
+const animate = timestamp => {
+    update(timestamp / 1000)
     render()
     requestAnimationFrame(animate)
 }

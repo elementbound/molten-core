@@ -17,14 +17,44 @@ const distance = ([ax, ay], [bx, by]) =>
     voronoi(8, 256, 256, (x,y, value) => { ... })
    ```
  * 
+ * @param {Function} callback Callback to receive (x, y, value) triplets
  * @param {number} pointCount Number of points
  * @param {number} width Image width
  * @param {number} height Image height
- * @param {Function} callback Callback to receive (x, y, value) triplets
+ * @param {bool} seamless Generate seamless image
  */
-const voronoi = (pointCount, width, height, callback) => {
-    const points = range(pointCount)
-        .map(() => [Math.random(), Math.random()])
+const voronoi = (callback, pointCount, width, height, seamless = true) => {
+    let points = []
+
+    if(!seamless) {
+        points = range(pointCount)
+            .map(() => [Math.random(), Math.random()])
+    } else {
+        // Make sure point count is divisible by four
+        pointCount = (pointCount / 4 | 0) * 4
+
+        // Generate points for only one quarter of the whole texture
+        const pointsQuarter = range(pointCount / 4)
+            .map(() => [Math.random(), Math.random()])
+
+        const halfCount = pointCount / 2
+        const quarterCount = pointCount / 4
+
+        // Stitch them mirrored to all quarters
+        points = range(pointCount)
+            .map(idx => {
+                const srcIdx = idx % quarterCount
+                const mirrorX = (idx / quarterCount | 0) % 2 ? 1 : -1
+                const mirrorY = (idx / halfCount | 0) % 2 ? 1 : -1
+
+                let [x, y] = pointsQuarter[srcIdx]
+
+                return [
+                    (1 + (x * mirrorX)) / 2,
+                    (1 + (y * mirrorY)) / 2
+                ]
+            })
+    }
         
     for(let y = 0; y < height; ++y) {
         for(let x = 0; x < width; ++x) {
@@ -35,10 +65,10 @@ const voronoi = (pointCount, width, height, callback) => {
                 .map(([px, py]) => ({
                     x: px,
                     y: py,
-                    distance: distance([u, v], [px, py])
+                    distance: distance([u + 0, v + 0], [px, py])
                 }))
                 .sort((a, b) => a.distance - b.distance)
-                .slice(0, 2)
+                // .slice(0, 2)
 
             const minDst = Math.min(nearestPoints[0].distance, nearestPoints[1].distance)
             const maxDst = Math.max(nearestPoints[0].distance, nearestPoints[1].distance)
