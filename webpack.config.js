@@ -16,5 +16,14 @@ module.exports = {
     output: {
         filename: '[name].js',
         path: DIST
+    },
+
+    module: {
+        rules: [
+            {
+                test: /\.(fs|vs)$/,
+                use: 'raw-loader'
+            }
+        ]
     }
 }

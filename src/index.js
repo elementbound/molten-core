@@ -20,11 +20,15 @@ const context = {
     renderer: undefined,
     scene: undefined,
     camera: undefined,
-    texture: undefined
+    texture: undefined,
+    material: undefined
 }
 
 const setup = () => {
-    const renderer = new three.WebGLRenderer()
+    const canvas = document.createElement( 'canvas' )
+    const renderContext = canvas.getContext( 'webgl2' )
+    const renderer = new three.WebGLRenderer( { canvas: canvas, context: renderContext } )
+
     renderer.setSize(window.innerWidth, window.innerHeight)
     document.body.appendChild(renderer.domElement)
 
@@ -33,21 +37,23 @@ const setup = () => {
 
 const createTexture = async () => {
     const consoleDiv = document.querySelector('.console')
-    const width = 64
-    const height = 64
-    const depth = 64
-    const points = 64
+    const size = [128, 128, 128]
+    const points = 256
 
     const start = performance.now()
-    const data = await generateVoronoi(points, width, height, depth, progress => {
+    const data = await generateVoronoi(points, ...size, progress => {
         let text = `Generating Voronoi texture ${(progress*10000 | 0) / 100}%`
         consoleDiv.innerHTML = text
     })
     consoleDiv.innerHTML = `Generated Voronoi texture in ${performance.now() - start} ms`
 
-    context.texture = new three.DataTexture3D(data, width, height, depth, three.RGBFormat, three.UnsignedByteType, 
-        three.UVMapping, three.RepeatWrapping, three.RepeatWrapping, 
-        three.LinearFilter, three.LinearFilter)
+    context.texture = new three.DataTexture3D(data, ...size)
+
+    context.texture.format = three.RGBFormat
+    context.texture.type = three.UnsignedByteType
+    context.texture.minFilter = three.LinearFilter
+    context.texture.magFilter = three.LinearFilter
+
     context.texture.needsUpdate = true
 }
 
@@ -62,16 +68,24 @@ const createScene = () => {
     light.position.z = 1
     scene.add(light)
     
-    let geometry = new three.SphereGeometry(1, 32, 32)
-    var material = new three.MeshBasicMaterial({ map: context.texture })
-    var cube = new three.Mesh( geometry, material )
-    scene.add(cube)
+    const material = new three.ShaderMaterial({
+        vertexShader: require('./shader/volumetric-simple.vs'),
+        fragmentShader: require('./shader/volumetric-simple.fs'),
+        uniforms: {
+            diffuse: { value: context.texture },
+            timeOffset: { value: 0 }
+        }
+    })
+    const geometry = new three.SphereGeometry(1, 32, 32)
+    const mesh = new three.Mesh( geometry, material )
+    scene.add(mesh)
 
     camera.position.z = 4
     camera.lookAt(0, 0, 0)
 
     context.scene = scene
     context.camera = camera
+    context.material = material
 }
 
 const update = time => {
@@ -81,13 +95,16 @@ const update = time => {
 
     const yaw = factor * 2 * Math.PI
     const pitch = (30 + 11.25 * Math.sin(factor * 2 * Math.PI)) / 180 * Math.PI
-    const dst = (2 + 0.5 * Math.sin(factor * 2 * Math.PI))
+    const dst = (2.5 + 0.25 * Math.sin(factor * 2 * Math.PI))
 
     camera.position.x = Math.cos(yaw) * Math.cos(pitch) * dst
     camera.position.y = Math.sin(pitch) * dst
     camera.position.z = Math.sin(yaw) * Math.cos(pitch) * dst
 
     camera.lookAt(0, 0, 0)
+
+    context.material.uniforms.timeOffset.value = (4 * factor) % 1
+    context.material.needsUpdate = true
 }
 
 const render = () => {
