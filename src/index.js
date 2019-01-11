@@ -1,23 +1,8 @@
 const three = require('three')
+const voronoi3 = require('./voronoi3')
 
 const generateVoronoi = (width, height, depth, onProgress) => 
-    new Promise((resolve, reject) => {
-        const worker = new Worker('voronoi.js')
-        worker.postMessage({
-            type: 'voronoi',
-            args: [width, height, depth]
-        })
-
-        worker.onmessage = event => {
-            const message = event.data
-
-            if(message.type == 'progress' && onProgress) {
-                onProgress(message.progress)
-            } else if(message.type == 'done') {
-                resolve(message.data)
-            }
-        }
-    })
+    voronoi3(width, height, depth, onProgress)
 
 const context = {
     renderer: undefined,
@@ -40,7 +25,7 @@ const setup = () => {
 
 const createTexture = async () => {
     const consoleDiv = document.querySelector('.console')
-    const size = [256, 256, 64]
+    const size = [256, 256, 256]
 
     const start = performance.now()
     const data = await generateVoronoi(...size, progress => {

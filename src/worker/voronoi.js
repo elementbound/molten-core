@@ -1,39 +1,51 @@
 const VoronoiSampler = require('../texture/voronoi')
 
-const voronoi3 = (width, height, depth, seamless = true) => {
-    const sampler = new VoronoiSampler([1,1,1], 128, seamless)
-    const dataBuffer = new Uint8Array(width * height * depth * 3)
+const progressReporter = reportInterval => {
+    let reportLast = -1
 
-    const pixelsCount = width * height * depth
+    return (progress, id) => {
+        if((performance.now() - reportLast) > reportInterval) {
+            postMessage({
+                type: 'progress',
+                progress: progress
+            })
+
+            reportLast = performance.now()
+        }
+    }
+}
+
+const indexToCoords = (index, width, height, depth) => [
+    index % width,
+    (index / width | 0) % height,
+    (index / width / height | 0) % depth
+]
+
+const generatePartial = (id, range, size, sampler) => {
+    const [width, height, depth] = size
+    const [rangeFrom, rangeTo] = range
+    
+    const pixelsCount = rangeTo - rangeFrom
     let pixelsGenerated = 0
 
-    const reportRest = 1000 / 10
-    let reportLast = 0
+    const dataBuffer = new Uint8Array(pixelsCount * 3)
 
-    for(let x = 0; x < width; ++x) {
-        for(let y = 0; y < height; ++y) {
-            for(let z = 0; z < depth; ++z) {
-                const texcoords = [x/width, y/height, z/depth]
-                const value = sampler.sample(texcoords)
-                
-                const byte = (value * 255) | 0
-                const stride = 3 * (x + y*width + z*width*height)
-                dataBuffer[stride + 0] = byte
-                dataBuffer[stride + 1] = byte
-                dataBuffer[stride + 2] = byte
+    const reporter = progressReporter(1000 / 10)
+
+    for(let i = rangeFrom; i < rangeTo; ++i) {
+        const [x, y, z] = indexToCoords(i, ...size)
         
-                ++pixelsGenerated
+        const texcoords = [x/width, y/height, z/depth]
+        const value = sampler.sample(texcoords)
         
-                if((performance.now() - reportLast) > reportRest) {
-                    postMessage({
-                        type: 'progress',
-                        progress: pixelsGenerated / pixelsCount
-                    })
-        
-                    reportLast = performance.now()
-                }
-            }
-        }
+        const byte = (value * 255) | 0
+        const stride = 3 * (x + y*width + z*width*height - rangeFrom)
+        dataBuffer[stride + 0] = byte
+        dataBuffer[stride + 1] = byte
+        dataBuffer[stride + 2] = 128
+
+        ++pixelsGenerated
+        reporter(pixelsGenerated / pixelsCount)
     }
 
     postMessage({
@@ -45,7 +57,7 @@ const voronoi3 = (width, height, depth, seamless = true) => {
 onmessage = event => {
     const message = event.data
 
-    if(message.type == 'voronoi') {
-        voronoi3(...message.args)
+    if(message.type == 'partial') {
+        generatePartial(message.id, message.range, message.size, VoronoiSampler.fromJSON(message.sampler))
     }
 }

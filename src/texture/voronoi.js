@@ -51,12 +51,62 @@ module.exports = class VoronoiSampler {
         const volume = this.size.reduce((a, b) => a * b, 1)
         const pointCount = volume * frequency
         const hashResolution = 4
-        const hashSize = size.map(v => (v * hashResolution) | 0)
-
-        this._hash = value => (value * hashResolution) | 0
 
         this._points = range(pointCount)
             .map(() => size.map(v => v * Math.random()))
+
+        this._populateHash(hashResolution)
+    }
+
+    /**
+     * Sample at the given UVW coordinates. 
+     * @param {*} at Array of coordinates
+     */
+    sample(at) {
+        at = zip(at, this.size).map(([coordinate, scale]) => coordinate*scale)
+        
+        const hashAt = at.map(this._hash)
+
+        let neighbors = this._hashmap.get(hashAt)
+            .map(point => ({
+                position: point,
+                distance: distance(point, at)
+            }))
+            .sort((a, b) => a.distance - b.distance)
+
+        if(neighbors.length < 2) 
+            return 0
+            
+        const minDst = Math.min(neighbors[0].distance, neighbors[1].distance)
+        const maxDst = Math.max(neighbors[0].distance, neighbors[1].distance)
+
+        return minDst / maxDst
+    }
+
+    toJSON() {
+        return {
+            type: 'VoronoiSampler',
+            size: this.size,
+            frequency: this.frequency,
+            seamless: this.seamless,
+
+            internals: {
+                points: this._points
+            }
+        }
+    }
+
+    static fromJSON(json) {
+        let result = new VoronoiSampler(json.size, json.frequency, json.seamless)
+        result._points = json.internals.points
+        result._populateHash(4)
+
+        return result
+    }
+
+    _populateHash(hashResolution) {
+        this._hash = value => (value * hashResolution) | 0
+        const hashSize = this.size.map(v => (v * hashResolution) | 0)
 
         this._hashmap = new ArrayN(hashSize)
         for(let i = 0; i < this._hashmap.data.length; ++i) {
@@ -79,31 +129,5 @@ module.exports = class VoronoiSampler {
                     .filter(offset => this._hashmap.isValid(offset))
                     .forEach(hashPosition => this._hashmap.get(hashPosition).push(p.position))
             )
-    }
-
-    /**
-     * Sample at the given UVW coordinates. 
-     * @param {*} at Array of coordinates
-     */
-    sample(at) {
-        at = zip(at, this.size).map(([coordinate, scale]) => coordinate*scale)
-        
-        const hashAt = at.map(this._hash)
-
-        // TODO: cache this
-        let neighbors = this._hashmap.get(hashAt)
-            .map(point => ({
-                position: point,
-                distance: distance(point, at)
-            }))
-            .sort((a, b) => a.distance - b.distance)
-
-        if(neighbors.length < 2) 
-            return 0
-            
-        const minDst = Math.min(neighbors[0].distance, neighbors[1].distance)
-        const maxDst = Math.max(neighbors[0].distance, neighbors[1].distance)
-
-        return minDst / maxDst
     }
 }
