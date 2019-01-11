@@ -28,6 +28,12 @@ class ArrayN {
         this.data[this._index(at)] = value
     }
 
+    isValid(at) {
+        return zip(at, this.size)
+            .map(([coordinate, max]) => [coordinate | 0, max])
+            .every(([coordinate, max]) => coordinate >= 0 && coordinate < max)
+    }
+
     _index(at) {
         at = at.map(v => v | 0)
 
@@ -57,13 +63,21 @@ module.exports = class VoronoiSampler {
             this._hashmap.data[i] = []
         }
 
+        const dimensions = this.size.length
+        const offsets = range(Math.pow(3, dimensions)).
+            map(v => range(dimensions).map(i => (v / Math.pow(3, i) | 0) % 3)).
+            map(offset => offset.map(v => v-1))
+
         this._points
             .map(point => ({
                 position: point,
                 hashPosition: point.map(v => (v * hashResolution) | 0)
             }))
             .forEach(p => 
-                this._hashmap.get(p.hashPosition).push(p.position)
+                offsets
+                    .map(offset => zip(offset, p.hashPosition).map(([a, b]) => a+b))
+                    .filter(offset => this._hashmap.isValid(offset))
+                    .forEach(hashPosition => this._hashmap.get(hashPosition).push(p.position))
             )
     }
 
@@ -77,19 +91,15 @@ module.exports = class VoronoiSampler {
         const hashAt = at.map(this._hash)
 
         // TODO: cache this
-        let offsets = hashAt.map((v, i, a) => a.map(j => j == i ? 1 : 0))
-        offsets = offsets.concat(offsets.map(v => -v))
-        offsets = offsets.map(o => zip(o, hashAt).map(([a, b]) => a + b))
-
-        let sectors = [hashAt, ...offsets]
-        let neighbors = sectors
-            .map(sector => this._hashmap.get(sector))
-            .reduce((a, b) => a.concat(b), [])
+        let neighbors = this._hashmap.get(hashAt)
             .map(point => ({
                 position: point,
                 distance: distance(point, at)
             }))
             .sort((a, b) => a.distance - b.distance)
+
+        if(neighbors.length < 2) 
+            return 0
             
         const minDst = Math.min(neighbors[0].distance, neighbors[1].distance)
         const maxDst = Math.max(neighbors[0].distance, neighbors[1].distance)
