@@ -46,7 +46,7 @@ module.exports = class VoronoiSampler {
     constructor(size, frequency, seamless) {
         this.size = size
         this.frequency = frequency
-        this.seamless = seamless
+        this.seamless = seamless || this.size.map(() => true)
 
         const volume = this.size.reduce((a, b) => a * b, 1)
         const pointCount = volume * frequency
@@ -55,7 +55,27 @@ module.exports = class VoronoiSampler {
         this._points = range(pointCount)
             .map(() => size.map(v => v * Math.random()))
 
-        this._populateHash(hashResolution)
+        this.seamless
+            .map((seamless, axis) => [seamless, axis])
+            .filter(([seamless, axis]) => seamless)
+            .map(([seamless, axis]) => axis)
+            .forEach(axis => this.makeSeamless(axis))
+
+        this.populateHash(hashResolution)
+    }
+
+    makeSeamless(axis) {
+        this._points = this._points
+            .map(point => {
+                const oldPoint = [...point]
+                const newPoint = [...point]
+
+                oldPoint[axis] = oldPoint[axis] / 2
+                newPoint[axis] = 1 - oldPoint[axis]
+
+                return [oldPoint, newPoint]
+            })
+            .reduce((points, [oldPoint, newPoint]) => [...points, oldPoint, newPoint], [])
     }
 
     /**
@@ -99,12 +119,12 @@ module.exports = class VoronoiSampler {
     static fromJSON(json) {
         let result = new VoronoiSampler(json.size, json.frequency, json.seamless)
         result._points = json.internals.points
-        result._populateHash(4)
+        result.populateHash(4)
 
         return result
     }
 
-    _populateHash(hashResolution) {
+    populateHash(hashResolution) {
         this._hash = value => (value * hashResolution) | 0
         const hashSize = this.size.map(v => (v * hashResolution) | 0)
 
