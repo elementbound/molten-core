@@ -25,7 +25,7 @@ const setup = () => {
 
 const createTexture = async () => {
     const consoleDiv = document.querySelector('.console')
-    const size = [128, 128, 32]
+    const size = [64, 64, 64]
 
     const start = performance.now()
     const data = await generateVoronoi(...size, progress => {

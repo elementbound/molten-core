@@ -50,32 +50,9 @@ module.exports = class VoronoiSampler {
 
         const volume = this.size.reduce((a, b) => a * b, 1)
         const pointCount = volume * frequency
-        const hashResolution = 4
 
-        this._points = range(pointCount)
+        this.points = range(pointCount)
             .map(() => size.map(v => v * Math.random()))
-
-        this.seamless
-            .map((seamless, axis) => [seamless, axis])
-            .filter(([seamless, axis]) => seamless)
-            .map(([seamless, axis]) => axis)
-            .forEach(axis => this.makeSeamless(axis))
-
-        this.populateHash(hashResolution)
-    }
-
-    makeSeamless(axis) {
-        this._points = this._points
-            .map(point => {
-                const oldPoint = [...point]
-                const newPoint = [...point]
-
-                oldPoint[axis] = oldPoint[axis] / 2
-                newPoint[axis] = 1 - oldPoint[axis]
-
-                return [oldPoint, newPoint]
-            })
-            .reduce((points, [oldPoint, newPoint]) => [...points, oldPoint, newPoint], [])
     }
 
     /**
@@ -85,17 +62,12 @@ module.exports = class VoronoiSampler {
     sample(at) {
         at = zip(at, this.size).map(([coordinate, scale]) => coordinate*scale)
         
-        const hashAt = at.map(this._hash)
-
-        let neighbors = this._hashmap.get(hashAt)
+        let neighbors = this.points
             .map(point => ({
                 position: point,
                 distance: distance(point, at)
             }))
             .sort((a, b) => a.distance - b.distance)
-
-        if(neighbors.length < 2) 
-            return 0
             
         const minDst = Math.min(neighbors[0].distance, neighbors[1].distance)
         const maxDst = Math.max(neighbors[0].distance, neighbors[1].distance)
@@ -111,43 +83,15 @@ module.exports = class VoronoiSampler {
             seamless: this.seamless,
 
             internals: {
-                points: this._points
+                points: this.points
             }
         }
     }
 
     static fromJSON(json) {
         let result = new VoronoiSampler(json.size, json.frequency, json.seamless)
-        result._points = json.internals.points
-        result.populateHash(4)
+        result.points = json.internals.points
 
         return result
-    }
-
-    populateHash(hashResolution) {
-        this._hash = value => (value * hashResolution) | 0
-        const hashSize = this.size.map(v => (v * hashResolution) | 0)
-
-        this._hashmap = new ArrayN(hashSize)
-        for(let i = 0; i < this._hashmap.data.length; ++i) {
-            this._hashmap.data[i] = []
-        }
-
-        const dimensions = this.size.length
-        const offsets = range(Math.pow(3, dimensions)).
-            map(v => range(dimensions).map(i => (v / Math.pow(3, i) | 0) % 3)).
-            map(offset => offset.map(v => v-1))
-
-        this._points
-            .map(point => ({
-                position: point,
-                hashPosition: point.map(v => (v * hashResolution) | 0)
-            }))
-            .forEach(p => 
-                offsets
-                    .map(offset => zip(offset, p.hashPosition).map(([a, b]) => a+b))
-                    .filter(offset => this._hashmap.isValid(offset))
-                    .forEach(hashPosition => this._hashmap.get(hashPosition).push(p.position))
-            )
     }
 }
