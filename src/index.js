@@ -40,6 +40,8 @@ const createTexture = async () => {
     context.texture.type = three.UnsignedByteType
     context.texture.minFilter = three.LinearFilter
     context.texture.magFilter = three.LinearFilter
+    context.texture.wrapS = three.RepeatWrapping
+    context.texture.wrapT = three.RepeatWrapping
 
     context.texture.needsUpdate = true
 }

@@ -53,6 +53,12 @@ module.exports = class VoronoiSampler {
 
         this.points = range(pointCount)
             .map(() => size.map(v => v * Math.random()))
+
+        seamless.forEach((seamlessness, axis) => {
+            if(seamlessness) {
+                this.makeSeamless(axis)
+            }
+        })
     }
 
     /**
@@ -73,6 +79,18 @@ module.exports = class VoronoiSampler {
         const maxDst = Math.max(neighbors[0].distance, neighbors[1].distance)
 
         return minDst / maxDst
+    }
+
+    makeSeamless(axis) {
+        const offset = this.size.map((v, i) => (i == axis) ? this.size[axis] : 0)
+
+        const negativePoints = this.points
+            .map(point => point.map((v, i) => v - offset[i]))
+            
+        const positivePoints = this.points
+            .map(point => point.map((v, i) => v + offset[i]))
+
+        this.points.push(...negativePoints, ...positivePoints)
     }
 
     toJSON() {
