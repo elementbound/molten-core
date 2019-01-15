@@ -9,7 +9,7 @@ module.exports = (width, height, depth, onProgress) => {
         const threadCount = 12
 
         const pixelsCount = width * height * depth
-        const sampler = new VoronoiSampler([1, 1, 1], 128, [true, false, true])
+        const sampler = new VoronoiSampler([3.14 / 2, 1, 1], 1024, [true, false, true])
 
         let remainingWorkers = threadCount
 

@@ -1,3 +1,5 @@
+const SpatialHashContainer = require('./spatialhash.js')
+
 const range = n => 
     [...Array(n).keys()]
 
@@ -12,53 +14,24 @@ const length = v =>
 const distance = (a, b) =>
     length(zip(a, b).map(([ac, bc]) => ac - bc))
 
-class ArrayN {
-    constructor(size) {
-        this.size = size
-        this.data = new Array(size.reduce((a, b) => a*b, 1))
-
-        this._indexMultipliers = [1, ...this.size]
-    }
-
-    get(at) {
-        return this.data[this._index(at)]
-    }
-
-    set(at, value) {
-        this.data[this._index(at)] = value
-    }
-
-    isValid(at) {
-        return zip(at, this.size)
-            .map(([coordinate, max]) => [coordinate | 0, max])
-            .every(([coordinate, max]) => coordinate >= 0 && coordinate < max)
-    }
-
-    _index(at) {
-        at = at.map(v => v | 0)
-
-        return zip(at, this._indexMultipliers)
-            .reduce((accumulator, [a, multiplier]) => accumulator*multiplier + a, 0)
-    }
-}
-
 module.exports = class VoronoiSampler {
     constructor(size, frequency, seamless) {
         this.size = size
         this.frequency = frequency
         this.seamless = seamless || this.size.map(() => true)
+        this.spatialResolution = 4 // FIXED
 
-        const volume = this.size.reduce((a, b) => a * b, 1)
-        const pointCount = volume * frequency
+        this.points = []
 
-        this.points = range(pointCount)
-            .map(() => size.map(v => v * Math.random()))
+        this.generatePoints()
 
         seamless.forEach((seamlessness, axis) => {
             if(seamlessness) {
                 this.makeSeamless(axis)
             }
         })
+
+        this.populateSpatialContainer()
     }
 
     /**
@@ -67,18 +40,42 @@ module.exports = class VoronoiSampler {
      */
     sample(at) {
         at = zip(at, this.size).map(([coordinate, scale]) => coordinate*scale)
+
+        const hashAt = this.spatialContainer.hashCoords(at)
+        const buckets = this.spatialContainer.getNeighborHashes(hashAt)
         
-        let neighbors = this.points
+        const neighbors = buckets
+            .flatMap(bucket => this.spatialContainer.getBucket(bucket))
             .map(point => ({
                 position: point,
                 distance: distance(point, at)
             }))
             .sort((a, b) => a.distance - b.distance)
-            
+
         const minDst = Math.min(neighbors[0].distance, neighbors[1].distance)
         const maxDst = Math.max(neighbors[0].distance, neighbors[1].distance)
 
         return minDst / maxDst
+    }
+
+    generatePoints() {
+        const spatialStep = 1 / this.spatialResolution
+        const spatialSize = this.size.map(v => (v * this.spatialResolution) | 0)
+
+        // TODO: n dimensions?
+        for(let x = 0; x < spatialSize[0]; ++x) {
+            for(let y = 0; y < spatialSize[1]; ++y) {
+                for(let z = 0; z < spatialSize[2]; ++z) {
+                    const point = [
+                        (x + Math.random()) * spatialStep,
+                        (y + Math.random()) * spatialStep,
+                        (z + Math.random()) * spatialStep
+                    ]
+
+                    this.points.push(point)
+                }
+            }
+        }
     }
 
     makeSeamless(axis) {
@@ -91,6 +88,11 @@ module.exports = class VoronoiSampler {
             .map(point => point.map((v, i) => v + offset[i]))
 
         this.points.push(...negativePoints, ...positivePoints)
+    }
+
+    populateSpatialContainer() {
+        this.spatialContainer = new SpatialHashContainer(this.spatialResolution)
+        this.points.forEach(point => this.spatialContainer.put(point))
     }
 
     toJSON() {
@@ -109,6 +111,7 @@ module.exports = class VoronoiSampler {
     static fromJSON(json) {
         let result = new VoronoiSampler(json.size, json.frequency, json.seamless)
         result.points = json.internals.points
+        result.populateSpatialContainer()
 
         return result
     }
