@@ -53,11 +53,13 @@ const createTexture = async () => {
         size: size,
         onProgress: progress => {
             let text = `Generating Voronoi texture ${(progress*10000 | 0) / 100}%`
+            document.title = `Molten Core - ${progress * 100 | 0}%`
             consoleDiv.innerHTML = text
         }
     })
 
     consoleDiv.innerHTML = `Generated Voronoi texture in ${performance.now() - start} ms`
+    document.title = 'Molten Core'
 
     context.texture = new three.DataTexture3D(data, ...size)
 
