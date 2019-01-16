@@ -1,10 +1,11 @@
 /**
  * Module to manage multi-threaded texture rendering, using WebWorkers.
  * 
- * @module renderTexture
+ * @module texture
  */
 
 const _ = require('lodash')
+const TextureWorker = require('./worker/texture.worker')
 
 /** 
  * @callback progressCallback
@@ -39,7 +40,7 @@ module.exports = {
     
             _.range(threadCount)
                 .forEach(i => {
-                    const worker = new Worker('render-texture.js')
+                    const worker = new TextureWorker()
                     const range = [
                         (i / threadCount * pixelsCount) | 0, 
                         ((i + 1) / threadCount * pixelsCount) | 0
@@ -58,7 +59,7 @@ module.exports = {
                         if(message.type == 'progress' && onProgress) {
                             workerProgress[i] = message.progress
     
-                            onProgress(workerProgress.reduce((a, b) => a + b/threadCount))
+                            onProgress(workerProgress.reduce((a, b) => a + b) / threadCount)
                         } else if(message.type == 'done') {
                             dataBuffer.set(message.data, range[0]*3)
                             workerProgress[i] = 1

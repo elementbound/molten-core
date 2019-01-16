@@ -5,7 +5,6 @@ const DIST = path.resolve(__dirname, 'dist')
 module.exports = {
     entry: {
         main: './src/index.js',
-        'render-texture': './src/worker/render-texture.js'
     },
 
     devtool: 'source-map',
@@ -27,6 +26,11 @@ module.exports = {
             {
                 test: /\.(fs|vs)$/,
                 use: 'raw-loader'
+            },
+
+            {
+                test: /\.worker\.js$/,
+                use: 'worker-loader'
             }
         ]
     }

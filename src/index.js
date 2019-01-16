@@ -5,7 +5,7 @@ const {lerp} = require('./util')
 
 const VoronoiSampler = require('./texture/voronoi')
 const LayeredSampler = require('./texture/layered')
-const texture = require('./render-texture')
+const texture = require('./texture')
 
 const context = {
     renderer: undefined,
@@ -30,10 +30,10 @@ const createTexture = async () => {
     const consoleDiv = document.querySelector('.console')
     
     const layerCount = 4
-    const size = [128, 128, 64]
+    const size = [256, 256, 64]
 
     const layers = _.range(layerCount).map(index => {
-        const weight = 1 / Math.pow(2, index * 0.5)
+        const weight = 1 / Math.pow(2, index)
         const scale = lerp(1, 4, index/layerCount)
 
         const sampler = new VoronoiSampler({
