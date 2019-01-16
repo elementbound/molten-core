@@ -1,5 +1,4 @@
-const range = n => 
-    [...Array(n).keys()]
+const _ = require('lodash')
 
 module.exports = class SpatialHashContainer {
     constructor(resolution) {
@@ -31,7 +30,7 @@ module.exports = class SpatialHashContainer {
         const result = []
 
         for(let i = 0; i < neighbors; ++i) {
-            const neighborBucket = range(dimensions)
+            const neighborBucket = _.range(dimensions)
                 .map((v, axis) => ((i / Math.pow(3, axis) | 0) % 3))
                 .map((v, axis) => v + hash[axis] - 1)
 

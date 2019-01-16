@@ -1,15 +1,11 @@
+const _ = require('lodash')
 const SpatialHashContainer = require('./spatialhash.js')
-
-const zip = (a, b) => 
-    [...a.keys()].map(
-        i => [a[i], b[i]]
-    )
 
 const length = v => 
     Math.sqrt(v.map(c => c*c).reduce((a, b) => a+b, 0))
 
 const distance = (a, b) =>
-    length(zip(a, b).map(([ac, bc]) => ac - bc))
+    length(_.zip(a, b).map(([ac, bc]) => ac - bc))
 
 class VoronoiSampler {
     /**
@@ -56,7 +52,7 @@ class VoronoiSampler {
      * @returns {number} Intensity value
      */
     sample(at) {
-        at = zip(at, this.size).map(([coordinate, scale]) => (coordinate % 1) * scale)
+        at = _.zip(at, this.size).map(([coordinate, scale]) => (coordinate % 1) * scale)
 
         const hashAt = this.spatialContainer.hashCoords(at)
         const buckets = this.spatialContainer.getNeighborHashes(hashAt)

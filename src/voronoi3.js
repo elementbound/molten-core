@@ -1,7 +1,5 @@
+const _ = require('lodash')
 const VoronoiSampler = require('./texture/voronoi')
-
-const range = n => 
-    [...Array(n).keys()]
 
 /** 
  * @callback progressCallback
@@ -34,7 +32,7 @@ const voronoi3 = (width, height, depth, onProgress) => {
 
         let remainingWorkers = threadCount
 
-        range(threadCount)
+        _.range(threadCount)
             .forEach(i => {
                 const worker = new Worker('voronoi.js')
                 const range = [
