@@ -51,10 +51,12 @@ class VoronoiSampler {
 
     /**
      * Sample at the given texture coordinates. 
-     * @param {number[]} at Array of coordinates
+     * 
+     * @param {number[]} at Texture coordinates
+     * @returns {number} Intensity value
      */
     sample(at) {
-        at = zip(at, this.size).map(([coordinate, scale]) => coordinate*scale)
+        at = zip(at, this.size).map(([coordinate, scale]) => (coordinate % 1) * scale)
 
         const hashAt = this.spatialContainer.hashCoords(at)
         const buckets = this.spatialContainer.getNeighborHashes(hashAt)
