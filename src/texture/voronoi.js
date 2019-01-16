@@ -1,8 +1,5 @@
 const SpatialHashContainer = require('./spatialhash.js')
 
-const range = n => 
-    [...Array(n).keys()]
-
 const zip = (a, b) => 
     [...a.keys()].map(
         i => [a[i], b[i]]
@@ -14,29 +11,47 @@ const length = v =>
 const distance = (a, b) =>
     length(zip(a, b).map(([ac, bc]) => ac - bc))
 
-module.exports = class VoronoiSampler {
-    constructor(size, frequency, seamless) {
-        this.size = size
-        this.frequency = frequency
-        this.seamless = seamless || this.size.map(() => true)
+class VoronoiSampler {
+    /**
+     * Construct sampler instance.
+     * 
+     * @param {Object} options Sampler options
+     * @param {Number[]} [options.size=[1, 1, 1]] Domain size
+     * @param {Boolean[]} [options.seamless=[false]] Seamlessness for each axis
+     * @param {Number[][]} [options.points] Don't generate points, use those provided
+     */
+    constructor(options) {
+        // Parse options
+        options = options || {}
+        options.size = options.size || [1, 1, 1]
+        options.seamless = (options.seamless && Array.isArray(options.seamless)) ? options.seamless : options.size.map(() => false)
+        options.points = Array.isArray(options.points) ? options.points : undefined
+
+        // Initialize members
+        this.size = options.size
+        this.seamless = options.seamless
         this.spatialResolution = 4 // FIXED
 
-        this.points = []
+        const needsPointGeneration = !options.points
 
-        this.generatePoints()
+        if(needsPointGeneration) {
+            this.points = this.generatePoints()
 
-        seamless.forEach((seamlessness, axis) => {
-            if(seamlessness) {
-                this.makeSeamless(axis)
-            }
-        })
+            this.seamless.forEach((seamlessness, axis) => {
+                if(seamlessness) {
+                    this.makeSeamless(axis)
+                }
+            })
+        } else {
+            this.points = options.points
+        }
 
         this.populateSpatialContainer()
     }
 
     /**
-     * Sample at the given UVW coordinates. 
-     * @param {*} at Array of coordinates
+     * Sample at the given texture coordinates. 
+     * @param {number[]} at Array of coordinates
      */
     sample(at) {
         at = zip(at, this.size).map(([coordinate, scale]) => coordinate*scale)
@@ -58,9 +73,16 @@ module.exports = class VoronoiSampler {
         return minDst / maxDst
     }
 
+    /**
+     * Generate points for texture generation.
+     * 
+     * @returns {number[][]} Array of vectors
+     * @access private
+     */
     generatePoints() {
         const spatialStep = 1 / this.spatialResolution
         const spatialSize = this.size.map(v => (v * this.spatialResolution) | 0)
+        const result = []
 
         // TODO: n dimensions?
         for(let x = 0; x < spatialSize[0]; ++x) {
@@ -72,12 +94,22 @@ module.exports = class VoronoiSampler {
                         (z + Math.random()) * spatialStep
                     ]
 
-                    this.points.push(point)
+                    result.push(point)
                 }
             }
         }
+
+        return result
     }
 
+    /**
+     * Map the instance's points in a way to make them seamless on the given axis.
+     * *NOTE:* this may or may not change the count of points.
+     * 
+     * @param {integer} axis Axis index
+     * @returns {void}
+     * @access private
+     */
     makeSeamless(axis) {
         const offset = this.size.map((v, i) => (i == axis) ? this.size[axis] : 0)
 
@@ -95,24 +127,32 @@ module.exports = class VoronoiSampler {
         this.points.forEach(point => this.spatialContainer.put(point))
     }
 
+    /**
+     * Serialize instance as an object ready to be serialized / transferred.
+     * 
+     * @returns {Object}
+     */
     toJSON() {
         return {
             type: 'VoronoiSampler',
-            size: this.size,
-            frequency: this.frequency,
-            seamless: this.seamless,
-
-            internals: {
+            options: {
+                size: this.size,
+                seamless: this.seamless,
                 points: this.points
             }
         }
     }
 
+    /**
+     * Deserialize instance.
+     * 
+     * @param {Object} json Serialized data
+     * @returns {VoronoiSampler}
+     * @see VoronoiSampler#toJSON
+     */
     static fromJSON(json) {
-        let result = new VoronoiSampler(json.size, json.frequency, json.seamless)
-        result.points = json.internals.points
-        result.populateSpatialContainer()
-
-        return result
+        return new VoronoiSampler(json.options)
     }
 }
+
+module.exports = VoronoiSampler

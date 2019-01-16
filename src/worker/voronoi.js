@@ -3,7 +3,7 @@ const VoronoiSampler = require('../texture/voronoi')
 const progressReporter = reportInterval => {
     let reportLast = -1
 
-    return (progress, id) => {
+    return progress => {
         if((performance.now() - reportLast) > reportInterval) {
             postMessage({
                 type: 'progress',

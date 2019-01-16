@@ -1,9 +1,6 @@
 const three = require('three')
 const voronoi3 = require('./voronoi3')
 
-const generateVoronoi = (width, height, depth, onProgress) => 
-    voronoi3(width, height, depth, onProgress)
-
 const context = {
     renderer: undefined,
     scene: undefined,
@@ -25,10 +22,10 @@ const setup = () => {
 
 const createTexture = async () => {
     const consoleDiv = document.querySelector('.console')
-    const size = [64, 64, 64]
+    const size = [128, 128, 64]
 
     const start = performance.now()
-    const data = await generateVoronoi(...size, progress => {
+    const data = await voronoi3(...size, progress => {
         let text = `Generating Voronoi texture ${(progress*10000 | 0) / 100}%`
         consoleDiv.innerHTML = text
     })
