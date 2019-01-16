@@ -1,4 +1,4 @@
-const VoronoiSampler = require('../texture/voronoi')
+const samplers = require('../texture/samplers')
 
 const progressReporter = reportInterval => {
     let reportLast = -1
@@ -58,6 +58,6 @@ onmessage = event => {
     const message = event.data
 
     if(message.type == 'partial') {
-        generatePartial(message.id, message.range, message.size, VoronoiSampler.fromJSON(message.sampler))
+        generatePartial(message.id, message.range, message.size, samplers.fromJSON(message.sampler))
     }
 }

@@ -1,4 +1,5 @@
 const _ = require('lodash')
+const samplers = require('./samplers')
 
 /**
  * The layered sampler creates detailed textures, by merging the results of multiplate samplers.
@@ -74,7 +75,7 @@ class LayeredSampler {
     toJSON() {
         return {
             type: 'LayeredSampler',
-            layers: this.layers
+            layers: this.layers.map(layer => layer.toJSON())
         }
     }
 
@@ -86,6 +87,10 @@ class LayeredSampler {
      * @see LayeredSampler#toJSON
      */
     static fromJSON(json) {
+        json.layers.forEach(layer => {
+            layer.sampler = samplers.fromJSON(layer.sampler)
+        })
+
         return new LayeredSampler(json.layers)
     }
 }
