@@ -5,7 +5,7 @@ const DIST = path.resolve(__dirname, 'dist')
 module.exports = {
     entry: {
         main: './src/index.js',
-        voronoi: './src/worker/voronoi.js'
+        'render-texture': './src/worker/render-texture.js'
     },
 
     devtool: 'source-map',

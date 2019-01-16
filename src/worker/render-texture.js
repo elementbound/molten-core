@@ -1,3 +1,7 @@
+/**
+ * @file Source for texture rendering Web Worker.
+ */
+
 const samplers = require('../texture/samplers')
 
 const progressReporter = reportInterval => {
@@ -15,13 +19,32 @@ const progressReporter = reportInterval => {
     }
 }
 
+/**
+ * Convert pixel index to 3D coordinates.
+ * 
+ * @param {number} index Pixel index
+ * @param {number} width Texture width
+ * @param {number} height Texture height
+ * @param {number} depth Texture depth
+ * 
+ * @returns {number[]} Position vector
+ * 
+ * @access private
+ */
 const indexToCoords = (index, width, height, depth) => [
     index % width,
     (index / width | 0) % height,
     (index / width / height | 0) % depth
 ]
 
-const generatePartial = (id, range, size, sampler) => {
+/**
+ * Render a part of the texture.
+ * 
+ * @param {number[]} range [from, to] range of pixel indices to render
+ * @param {number[]} size Texture size, in pixels
+ * @param {Object} sampler Sampler to render
+ */
+const renderPartial = (range, size, sampler) => {
     const [width, height, depth] = size
     const [rangeFrom, rangeTo] = range
     
@@ -58,6 +81,6 @@ onmessage = event => {
     const message = event.data
 
     if(message.type == 'partial') {
-        generatePartial(message.id, message.range, message.size, samplers.fromJSON(message.sampler))
+        renderPartial(message.range, message.size, samplers.fromJSON(message.sampler))
     }
 }

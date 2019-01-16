@@ -1,5 +1,11 @@
+const _ = require('lodash')
 const three = require('three')
-const voronoi3 = require('./voronoi3')
+
+const {lerp} = require('./util')
+
+const VoronoiSampler = require('./texture/voronoi')
+const LayeredSampler = require('./texture/layered')
+const texture = require('./render-texture')
 
 const context = {
     renderer: undefined,
@@ -22,13 +28,35 @@ const setup = () => {
 
 const createTexture = async () => {
     const consoleDiv = document.querySelector('.console')
+    
+    const layerCount = 4
     const size = [128, 128, 64]
 
-    const start = performance.now()
-    const data = await voronoi3(...size, progress => {
-        let text = `Generating Voronoi texture ${(progress*10000 | 0) / 100}%`
-        consoleDiv.innerHTML = text
+    const layers = _.range(layerCount).map(index => {
+        const weight = 1 / Math.pow(2, index * 0.5)
+        const scale = lerp(1, 4, index/layerCount)
+
+        const sampler = new VoronoiSampler({
+            size: [3.14 * scale, scale, scale],
+            seamless: [true, false, true]
+        })
+
+        return {
+            sampler: sampler,
+            weight: weight
+        }
     })
+
+    const start = performance.now()
+    const data = await texture.render({
+        sampler: new LayeredSampler(layers),
+        size: size,
+        onProgress: progress => {
+            let text = `Generating Voronoi texture ${(progress*10000 | 0) / 100}%`
+            consoleDiv.innerHTML = text
+        }
+    })
+
     consoleDiv.innerHTML = `Generated Voronoi texture in ${performance.now() - start} ms`
 
     context.texture = new three.DataTexture3D(data, ...size)
