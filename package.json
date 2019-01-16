@@ -6,12 +6,14 @@
   "scripts": {
     "start": "webpack-dev-server --open",
     "build": "webpack",
+    "jsdoc": "jsdoc src -r -p -P package.json -d doc/",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "author": "elementbound",
   "license": "MIT",
   "devDependencies": {
     "eslint": "^5.12.0",
+    "jsdoc": "^3.5.5",
     "raw-loader": "^1.0.0",
     "webpack": "^4.28.1",
     "webpack-cli": "^3.2.1",
