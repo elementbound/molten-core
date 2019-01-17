@@ -1,17 +1,10 @@
 const _ = require('lodash')
 const three = require('three')
 
-const {lerp} = require('./util')
-
-const VoronoiSampler = require('./texture/voronoi')
-const LayeredSampler = require('./texture/layered')
-const texture = require('./texture')
-
 const context = {
     renderer: undefined,
     scene: undefined,
     camera: undefined,
-    texture: undefined,
     material: undefined
 }
 
@@ -24,53 +17,6 @@ const setup = () => {
     document.body.appendChild(renderer.domElement)
 
     context.renderer = renderer
-}
-
-const createTexture = async () => {
-    const consoleDiv = document.querySelector('.console')
-    
-    const layerCount = 4
-    const size = [256, 256, 64]
-
-    const layers = _.range(layerCount).map(index => {
-        const weight = 1 / Math.pow(2, index)
-        const scale = lerp(1, 4, index/layerCount)
-
-        const sampler = new VoronoiSampler({
-            size: [3.14 * scale, scale, scale],
-            seamless: [true, false, true]
-        })
-
-        return {
-            sampler: sampler,
-            weight: weight
-        }
-    })
-
-    const start = performance.now()
-    const data = await texture.render({
-        sampler: new LayeredSampler(layers),
-        size: size,
-        onProgress: progress => {
-            let text = `Generating Voronoi texture ${(progress*10000 | 0) / 100}%`
-            document.title = `Molten Core - ${progress * 100 | 0}%`
-            consoleDiv.innerHTML = text
-        }
-    })
-
-    consoleDiv.innerHTML = `Generated Voronoi texture in ${performance.now() - start} ms`
-    document.title = 'Molten Core'
-
-    context.texture = new three.DataTexture3D(data, ...size)
-
-    context.texture.format = three.RGBFormat
-    context.texture.type = three.UnsignedByteType
-    context.texture.minFilter = three.LinearFilter
-    context.texture.magFilter = three.LinearFilter
-    context.texture.wrapS = three.RepeatWrapping
-    context.texture.wrapT = three.RepeatWrapping
-
-    context.texture.needsUpdate = true
 }
 
 const createScene = () => {
@@ -86,9 +32,8 @@ const createScene = () => {
     
     const material = new three.ShaderMaterial({
         vertexShader: require('./shader/volumetric-simple.vs'),
-        fragmentShader: require('./shader/volumetric-simple.fs'),
+        fragmentShader: require('./shader/volumetric-procedural.fs'),
         uniforms: {
-            diffuse: { value: context.texture },
             timeOffset: { value: 0 }
         }
     })
@@ -145,7 +90,6 @@ const main = async () => {
     setup()
     window.onresize = adjustCanvasSize(context.renderer)
 
-    await createTexture()
     createScene()
     animate()
 }
