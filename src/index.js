@@ -1,5 +1,5 @@
-const _ = require('lodash')
 const three = require('three')
+const shader = require('./shader')
 
 const context = {
     renderer: undefined,
@@ -29,10 +29,13 @@ const createScene = () => {
     light.position.x = 1
     light.position.z = 1
     scene.add(light)
+
+    const vertexShader = shader.processSource(require('./shader/volumetric-simple.vs'))
+    const fragmentShader = shader.processSource(require('./shader/volumetric-procedural.fs'))
     
     const material = new three.ShaderMaterial({
-        vertexShader: require('./shader/volumetric-simple.vs'),
-        fragmentShader: require('./shader/volumetric-procedural.fs'),
+        vertexShader: vertexShader,
+        fragmentShader: fragmentShader,
         uniforms: {
             timeOffset: { value: 0 }
         }
