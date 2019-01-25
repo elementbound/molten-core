@@ -1,5 +1,6 @@
 const three = require('three')
 const shader = require('./shader')
+const JSZip = require('jszip')
 const { lerp } = require('./util')
 
 const context = {
@@ -12,7 +13,7 @@ const context = {
 const setup = () => {
     const canvas = document.createElement( 'canvas' )
     const renderContext = canvas.getContext( 'webgl2' )
-    const renderer = new three.WebGLRenderer( { canvas: canvas, context: renderContext } )
+    const renderer = new three.WebGLRenderer( { canvas: canvas, context: renderContext, antialias: true } )
 
     renderer.setSize(window.innerWidth, window.innerHeight)
     document.body.appendChild(renderer.domElement)
@@ -21,7 +22,9 @@ const setup = () => {
 }
 
 const createScene = () => {
-    const aspect = window.innerWidth / window.innerHeight
+    const { renderer } = context
+    const canvas = renderer.domElement
+    const aspect = canvas.width / canvas.height
 
     const scene = new three.Scene()
     const camera = new three.PerspectiveCamera(90, aspect, 0.25, 8)
@@ -42,7 +45,7 @@ const createScene = () => {
             offsetPower: { value: 0.5}
         }
     })
-    const geometry = new three.SphereGeometry(1, 128, 128)
+    const geometry = new three.SphereGeometry(1, 512, 512)
     const mesh = new three.Mesh( geometry, material )
     scene.add(mesh)
 
@@ -77,7 +80,8 @@ const update = time => {
 const render = () => {
     const {renderer, scene, camera} = context
 
-    camera.aspect = window.innerWidth / window.innerHeight
+    const canvas = renderer.domElement
+    camera.aspect = canvas.width / canvas.height
     camera.updateProjectionMatrix()
 
     renderer.render(scene, camera)
@@ -100,4 +104,72 @@ const main = async () => {
     animate()
 }
 
-window.onload = main
+/**
+ * Retrieve canvas contents as blob
+ * 
+ * @param {HTMLCanvasElement} canvas 
+ */
+const canvasToBlob = canvas => 
+    new Promise((resolve) => {
+        canvas.toBlob(resolve, 'image/png')
+    })
+
+const saveData = (blob, fileName) => {
+    const a = document.createElement('a')
+    document.body.appendChild(a)
+    a.style = 'display: none'
+
+    const url = window.URL.createObjectURL(blob)
+    console.log('Navigating to URL', url)
+
+    a.href = url
+    a.download = fileName
+    a.click()
+    window.URL.revokeObjectURL(url)
+}
+
+const displayProgress = progress => {
+    const progressbar = document.querySelector('.progressbar')
+    const percent = progressbar.querySelector('.percent')
+
+    percent.style.width = `${progress * 100 | 0}%`
+    progressbar.style.display = 'block'
+}
+
+const hideProgress = () => {
+    const progressbar = document.querySelector('.progressbar')
+    progressbar.style.display = 'none'
+}
+
+const renderSequence = async () => {
+    setup()
+    // window.onresize = adjustCanvasSize(context.renderer)
+    const renderer = context.renderer
+    renderer.setSize(600, 600)
+
+    const canvas = renderer.domElement
+
+    createScene()
+
+    const zip = new JSZip()
+
+    const duration = 8
+    const fps = 24
+
+    for(let frame = 0; frame < duration * fps; frame++) {
+        update(frame / fps)
+        render()
+
+        const frameBlob = await canvasToBlob(canvas)
+        zip.file(`${frame}.png`, frameBlob)
+        displayProgress(frame / (duration * fps))
+    }
+
+    displayProgress(1)
+    zip.generateAsync({ type: 'blob' }).then(zipBlob => {
+        saveData(zipBlob, 'molten-core.zip')
+        hideProgress()
+    })
+}
+
+window.onload = renderSequence

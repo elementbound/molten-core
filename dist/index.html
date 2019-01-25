@@ -11,6 +11,7 @@
         body { 
             margin: 0; 
             background-color: black;
+            color: white;
         }
         
         canvas { 
@@ -28,17 +29,43 @@
             top: 0;
 
             background-color: rgba(0,0,0, 0.5);
-            color: white;
             border: 1px solid lightgray;
             margin: 4px;
             padding: 2px;
 
             z-index: 1;
         }
+
+        .progressbar {
+            display: hidden;
+            position: absolute;
+        
+            width: 100vw;
+            height: 2em;
+            
+            left: 50vw;
+            top: 50vh;
+            transform: translate(-50%, -50%);
+        
+            text-align: center;
+            vertical-align: middle;
+            
+            border: 1px solid lightgray;
+        }
+        
+        .percent {
+            position: absolute;
+            background: lightgray;
+            
+            width: 0%;
+            height: 100%;
+        }
     </style>
 </head>
 <body>
     <div class="console"></div>
-    <img id="texture" src="" />
+    <div class="progressbar">
+        <div class="percent"></div>
+    </div>
 </body>
 </html>
