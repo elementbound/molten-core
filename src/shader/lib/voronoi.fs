@@ -1,4 +1,4 @@
-#include</lib/gold_noise.fs>
+#include</lib/gold_noise3.fs>
 
 const vec3[27] TILE_OFFSETS = vec3[27](
     vec3(-1,-1,-1), vec3( 0,-1,-1), vec3( 1,-1,-1),

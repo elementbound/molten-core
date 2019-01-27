@@ -3,6 +3,7 @@ const sources = {
     '/volumetric-simple.fs': require('./shader/volumetric-simple.fs'),
     '/volumetric-procedural.fs': require('./shader/volumetric-procedural.fs'),
     '/lib/gold_noise.fs': require('./shader/lib/gold_noise.fs'),
+    '/lib/gold_noise3.fs': require('./shader/lib/gold_noise3.fs'),
     '/lib/voronoi.fs': require('./shader/lib/voronoi.fs'),
     '/lib/layered_voronoi.fs': require('./shader/lib/layered_voronoi.fs')
 }
