@@ -12,5 +12,5 @@ out vec4 out_FragColor;
 
 void main() {
 	float v = layeredVoronoi(vUv);
-	out_FragColor = vec4( v, v, v, 1.0 );
+	out_FragColor = vec4( v, v, 0.5, 1.0 );
 }

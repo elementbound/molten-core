@@ -21,11 +21,22 @@ const setup = () => {
     context.renderer = renderer
 }
 
-const createScene = () => {
+const createScene = async () => {
     const aspect = window.innerWidth / window.innerHeight
 
     const scene = new three.Scene()
+    /*
     const camera = new three.PerspectiveCamera(90, aspect, 0.25, 8)
+    camera.position.z = 4
+    camera.lookAt(0, 0, 0)
+    scene.add(camera)
+    /*/
+    const camera = new three.OrthographicCamera(-1, -1, 1, 1, 0.5, 32)
+    camera.position = new three.Vector3(0, 0, 4)
+    camera.lookAt(0, 0, 0)
+    camera.updateProjectionMatrix()
+    scene.add(camera)
+    //*/
 
     const light = new three.DirectionalLight(0xffffff, 1)
     light.position.x = 1
@@ -35,8 +46,8 @@ const createScene = () => {
     const vertexShader = shader.processSource(require('./shader/volumetric-simple.vs'))
     const fragmentShader = shader.processSource(require('./shader/volumetric-simple.fs'))
     
-    const textureSize = [1024, 1024, 128]
-    const textureData = voronoi.render(textureSize)
+    const textureSize = [8, 8, 8]// [1024, 1024, 128]
+    const textureData = new Uint8Array(textureSize.reduce((a, b) => a * b, 1) * 4)// await voronoi.render(textureSize)
     const texture = new three.DataTexture3D(textureData, ...textureSize)
     texture.format = three.RGBAFormat
     texture.type = three.UnsignedByteType
@@ -44,6 +55,7 @@ const createScene = () => {
     texture.magFilter = three.LinearFilter
     texture.wrapS = three.RepeatWrapping
     texture.wrapT = three.RepeatWrapping
+    texture.needsUpdate = true
 
     const material = new three.ShaderMaterial({
         vertexShader: vertexShader,
@@ -53,12 +65,13 @@ const createScene = () => {
             offsetPower: { value: 0.5}
         }
     })
-    const geometry = new three.SphereGeometry(1, 128, 128)
+    
+    /* const geometry = new three.SphereGeometry(1, 128, 128)
     const mesh = new three.Mesh( geometry, material )
+    scene.add(mesh) */
+    const geometry = new three.SphereGeometry(1)// new three.PlaneGeometry(2, 2)
+    const mesh = new three.Mesh(geometry, material)
     scene.add(mesh)
-
-    camera.position.z = 4
-    camera.lookAt(0, 0, 0)
 
     context.scene = scene
     context.camera = camera
@@ -70,7 +83,7 @@ const update = time => {
 
     const factor = (time % 8) / 8
 
-    const yaw = factor * 2 * Math.PI
+    /*const yaw = factor * 2 * Math.PI
     const pitch = (30 + 11.25 * Math.sin(factor * 2 * Math.PI)) / 180 * Math.PI
     const dst = (2.5 + 0.25 * Math.sin(factor * 2 * Math.PI)) * 1.15
 
@@ -78,7 +91,7 @@ const update = time => {
     camera.position.y = Math.sin(pitch) * dst
     camera.position.z = Math.sin(yaw) * Math.cos(pitch) * dst
 
-    camera.lookAt(0, 0, 0)
+    camera.lookAt(0, 0, 0)*/
 
     context.material.uniforms.timeOffset.value = (2 * factor) % 1
     context.material.uniforms.offsetPower.value = lerp(-0.25, 0.5, (1 + Math.sin(factor * 2 * Math.PI)))
@@ -107,7 +120,7 @@ const main = async () => {
     setup()
     window.onresize = adjustCanvasSize(context.renderer)
 
-    createScene()
+    await createScene()
     animate()
 }
 
