@@ -1,5 +1,6 @@
 const three = require('three')
 const shader = require('./shader')
+const voronoi = require('./gpu-voronoi')
 const { lerp } = require('./util')
 
 const context = {
@@ -31,9 +32,19 @@ const createScene = () => {
     light.position.z = 1
     scene.add(light)
 
-    const vertexShader = shader.processSource(require('./shader/volumetric-procedural.vs'))
-    const fragmentShader = shader.processSource(require('./shader/volumetric-procedural.fs'))
+    const vertexShader = shader.processSource(require('./shader/volumetric-simple.vs'))
+    const fragmentShader = shader.processSource(require('./shader/volumetric-simple.fs'))
     
+    const textureSize = [1024, 1024, 128]
+    const textureData = voronoi.render(textureSize)
+    const texture = new three.DataTexture3D(textureData, ...textureSize)
+    texture.format = three.RGBAFormat
+    texture.type = three.UnsignedByteType
+    texture.minFilter = three.LinearFilter
+    texture.magFilter = three.LinearFilter
+    texture.wrapS = three.RepeatWrapping
+    texture.wrapT = three.RepeatWrapping
+
     const material = new three.ShaderMaterial({
         vertexShader: vertexShader,
         fragmentShader: fragmentShader,

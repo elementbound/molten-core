@@ -4,12 +4,13 @@ precision highp float;
 precision highp int;
 precision highp sampler3D;
 
-uniform sampler3D diffuse;
+#include</lib/layered_voronoi.fs>
 
 in vec3 vUv;
+
 out vec4 out_FragColor;
 
 void main() {
-	float value = texture( diffuse, vUv ).r;
-	out_FragColor = vec4( value, value, 0.5, 1.0 );
+	float v = layeredVoronoi(vUv);
+	out_FragColor = vec4( v, v, v, 1.0 );
 }
